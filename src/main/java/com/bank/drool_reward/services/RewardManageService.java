@@ -25,6 +25,7 @@ import com.bank.drool_reward.model.T001991Table;
 import com.bank.drool_reward.model.T003922Table;
 import com.bank.drool_reward.repository.T000070Repo;
 import com.bank.drool_reward.repository.T000820Repo;
+import com.bank.drool_reward.repository.T000871Repo;
 import com.bank.drool_reward.repository.T000899Repo;
 import com.bank.drool_reward.repository.T001750Repo;
 import com.bank.drool_reward.repository.T001754Repo;
@@ -53,6 +54,8 @@ public class RewardManageService {
 	T001750Repo t001750Repo;
 	@Autowired
 	T001754Repo t001754Repo;
+	@Autowired
+	T000871Repo t000871Repo;
 	static SimpleDateFormat sdformat = new SimpleDateFormat("yyyy-MM-dd");
 	public static final String EVT_TYP = "FAE";
 	public static final String EVT_NBR = "1";
@@ -180,7 +183,7 @@ public void getCutOfTime(RewardManage rewardManage, RewardManageService rewardMa
 		return returnVal;
 	}
 
-	public Map<String, String> updateRewardActionTable(String uid,RewardManage rewardManage) throws ParseException 
+	public Map<String, String> updateRewardActionTable(String uid,RewardManage rewardManage,T000899Table T000899obj ) throws ParseException 
 	{
 		Map<String, String>returnMap = new HashMap<String, String>();
 		try
@@ -199,6 +202,8 @@ public void getCutOfTime(RewardManage rewardManage, RewardManageService rewardMa
 											
 						t001991TableObj.setCCNMI_BU_NBR(t000820DateLogicRecord.getrWAE_BU_NBR());
 						t001991TableObj.setCCNMI_SEQ_NBR(String.valueOf(sequenceNO));
+						t001991TableObj.setCCNMI_ACCT_NBR(T000899obj.getrWACC_ACCT_NBR());
+						t001991TableObj.setCCNMI_SYS_CDE(T000899obj.getrWACC_SYS_CDE());
 						insertRecoredInT001991Table(t001991TableObj);
 						returnMap.put("STATUS", "SUCCESS");
 				}
@@ -274,8 +279,16 @@ public void getCutOfTime(RewardManage rewardManage, RewardManageService rewardMa
 				{
 					if(isValidateDataSurceIdAndProcess(rewardManage.getDataSourceId(),rewardManage.getBuisnessProcess(),rewardManage.getBuisnessSubprocess()))
 					{
-						getCutOfTime(rewardManage,rewardManageService);
-						map = updateRewardActionTable(EacToUid,rewardManage);
+						T000899Table T000899obj = validateUniqueID(EacToUid,ComponentConstantString.BU_NUM,ComponentConstantString.systemCode);
+						if(T000899obj!=null)
+						{
+							getCutOfTime(rewardManage,rewardManageService);
+							map = updateRewardActionTable(EacToUid,rewardManage,T000899obj);
+						}
+						else
+						{
+							map.put("Error", "Data is Not Available For validateUniqueID");
+						}
 					}
 					else
 					{
@@ -314,6 +327,37 @@ public void getCutOfTime(RewardManage rewardManage, RewardManageService rewardMa
 		}
 		return result;
 	}
+	
+	public T000899Table validateUniqueID(String EacToUid,String BU_NUM,String systemCode) 
+    {
+    	try
+    	{
+	    	T000899Table T000899Obj =  t000899Repo.findByUIDAndBU_NBR(EacToUid,BU_NUM,systemCode);
+	    	T000871Table T000871Obj = 	t000871Repo.findByUIDAndBU_NBR(EacToUid,BU_NUM);
+	    	T003922Table T003922Obj =  t003922Repo.findByUIDAndBU_NBR(EacToUid,BU_NUM);
+	    	
+	    	if(T000899Obj != null && T000871Obj != null && T003922Obj != null)
+	    	{
+	    		if(T000899Obj.getrWACC_RWDP_BU_NBR().equals(T000871Obj.getrWDP_BU_NBR()) &&
+	    			T000899Obj.getrWACC_PGM_NBR().equals(T000871Obj.getrWDP_PGM_NBR()) &&
+	    			T003922Obj.getaCCT_BU_NBR().equals(T000899Obj.getrWDP_BU_NBR()) && 
+	    			T003922Obj.getaCCT_SYS_CDE().equals(T000899Obj.getrWACC_SYS_CDE()))
+	    		{
+	    		return T000899Obj;
+	    		}
+	    		else
+	    		{
+	    			return null;
+	    		}
+	    	}
+	    	
+    	}
+    	catch(Exception e)
+    	{
+    		return null;
+    	}
+    	return null;
+    }
 	public String fetchUId(String primaryKey) {
 
 		String UID = null;
