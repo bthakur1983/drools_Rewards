@@ -1,0 +1,36 @@
+import com.bank.drool_reward.dto.RewardStatus;
+global com.bank.drool_reward.services.RewardStatusService rewardStatusService;
+import com.bank.drool_reward.model.T003922Table;
+import com.bank.drool_reward.model.T001906Table;
+import com.bank.drool_reward.util.ComponentConstantString;
+
+import java.lang.System;
+dialect "mvel"
+
+rule "To Check Input Parameters is AlphaNumeric"
+	when
+	$rewardObj : RewardStatus(dataConvObj.getData(clientApplication,dataSourceId,primaryKey))
+	then
+	  $rewardObj.setIsParamtereAlphaNumeric(true);
+	   
+end;
+
+rule "To Get UID IF KeyType EAC"
+	when
+	$rewardObj : RewardStatus(KeyType.equals("EAC"))
+	$tbl:T003922Table()
+	then
+	 $tbl.setaCCT_UID(rewardStatusService.fetchUId(
+	    $rewardObj.getPrimaryKey()));
+	   
+end;
+
+
+
+
+
+
+
+
+
+
