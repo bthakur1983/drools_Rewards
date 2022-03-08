@@ -1,6 +1,7 @@
 package com.bank.drool_reward.controller;
 
 import com.bank.drool_reward.dto.RewardStatus;
+import com.bank.drool_reward.dto.RewardStatusGeneric;
 import com.bank.drool_reward.model.T000820Table;
 import com.bank.drool_reward.model.T000871Table;
 import com.bank.drool_reward.model.T000899Table;
@@ -22,7 +23,8 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/reward")
-public class RewardStatusController {
+public class RewardStatusController 
+{
     Logger logger = LoggerFactory.getLogger(RewardStatusController.class);
     @Autowired
     RewardStatusService rewardStatusService;
@@ -113,6 +115,13 @@ public class RewardStatusController {
         return rewardStatusService.insertDataInT000899Table(obj);
 
 
+    }
+    
+    @PostMapping("/RewardStatusGenericRulesCheck")
+    public ResponseEntity<Object> insertDataInT000899Table(@RequestBody RewardStatusGeneric obj) {
+ 
+    	Map<String, String>returnMap =  rewardStatusService.RewardStatusGenericRulesCheck(obj);
+    	return new ResponseEntity<Object>(returnMap,HttpStatus.OK);
     }
 
 

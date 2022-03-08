@@ -20,9 +20,11 @@ public class DataConversion
 			return false;
 		else
 		{
-			Date currentDate = new Date();
+			
+			String curTempDate = sdformat.format(new Date());
+			Date currentDate = sdformat.parse(curTempDate);
 			Date exdate = sdformat.parse(expDate);
-			if(exdate.compareTo(currentDate)>0)
+			if(exdate.compareTo(currentDate)>=0)
 	 		{
 	 			return true;
 	 		}

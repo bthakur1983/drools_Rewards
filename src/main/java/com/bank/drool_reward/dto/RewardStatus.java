@@ -11,22 +11,32 @@ public class RewardStatus {
     private String dataSourceId;
     private String keyType;
     private String primaryKey;
-    private String versionNumber;   
-    private boolean isParamtereAlphaNumeric;
+    private String versionNumber; 
+    private String requestCode;
+    private boolean isValidRequest;
+  
      
     
     
     
 
-    public boolean getIsParamtereAlphaNumeric() {
-		return isParamtereAlphaNumeric;
+    public String getRequestCode() {
+		return requestCode;
 	}
 
-	public void setIsParamtereAlphaNumeric(boolean isParamtereAlphaNumeric) {
-		this.isParamtereAlphaNumeric = isParamtereAlphaNumeric;
+	public void setRequestCode(String requestCode) {
+		this.requestCode = requestCode;
 	}
-
+ 
 	 
+
+	public boolean isValidRequest() {
+		return isValidRequest;
+	}
+
+	public void setValidRequest(boolean isValidRequest) {
+		this.isValidRequest = isValidRequest;
+	}
 
 	public String getKey() {
         return key;

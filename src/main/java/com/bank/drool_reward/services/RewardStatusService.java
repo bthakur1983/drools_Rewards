@@ -1,6 +1,8 @@
 package com.bank.drool_reward.services;
 
+import com.bank.drool_reward.config.RulesConfigure;
 import com.bank.drool_reward.dto.RewardStatus;
+import com.bank.drool_reward.dto.RewardStatusGeneric;
 import com.bank.drool_reward.model.T000820Table;
 import com.bank.drool_reward.model.T000871Table;
 import com.bank.drool_reward.model.T000899Table;
@@ -32,7 +34,20 @@ import java.util.Optional;
 @Service
 public class RewardStatusService 
 {
-		
+
+//	@Autowired
+//	private  KieContainer kContainer;
+//	
+//	@Autowired
+//	public RewardStatusService(KieContainer kieContainer)
+//	{
+//		this.kContainer = kieContainer;
+//	}
+	@Autowired
+	RulesConfigure ruleConfig;
+	
+
+	
     public RewardStatus rewardStatus = new RewardStatus();
     @Autowired
     T001906Repo t001906Repo;
@@ -44,8 +59,11 @@ public class RewardStatusService
     T000899Repo t000899Repo;
     @Autowired
     T000871Repo t000871Repo;
-    @Autowired
-	private KieContainer kContainer;
+
+    
+    public String EacToUid;
+    
+    
     public List<T003922Table> dataT003922Table = null;
     public Optional<T000899Table> dataT000899Table = null;
     public Optional<T000871Table> dataT000871Table = null;
@@ -58,35 +76,44 @@ public class RewardStatusService
     
     public Map<String, String> getRewardStatus(RewardStatus rewardStatus,RewardStatusService rewardStatusService) {
  
-    	T000820Table T000820Obj = null;
+    	T000820Table T000820Obj = new T000820Table();
     	Map<String, String>map=new LinkedHashMap<String, String>();
   	
 		T003922Table tb=new T003922Table();
-		ruleUtil.executeRule(rewardStatus, tb,kContainer,rewardStatusService);
-		 if (tb.isValidRequest()) 
-	        {
-			ruleUtil.executeRule(rewardStatus, tb,kContainer,rewardStatusService);
-        	String EacToUid = tb.getaCCT_UID();
+		//ruleUtil.executeRule(ruleConfig.getkContainer(),rewardStatus, tb,rewardStatusService);
+		ruleUtil.executeRule(rewardStatus, tb,ruleConfig.getkContainer(),rewardStatusService);
+		 if (tb.isValidRequest())
+	     {
+			//ruleUtil.executeRule(ruleConfig.getkContainer(),rewardStatus, tb,rewardStatusService);
+        	EacToUid = tb.getaCCT_UID();
         	
-        	if(EacToUid == null && rewardStatus.getKeyType().equals(ComponentConstantString.UID_TYPE))
-        	{
-        		EacToUid = rewardStatus.getPrimaryKey();
-        	}
-        	else if(EacToUid == null && rewardStatus.getKeyType().equals(ComponentConstantString.EAC_TYPE))
-        	{
-        		 map.put("Error", "UID is Not Available in DB");
-        		 return map;
-        	}
+        	if(EacToUid == null)
+         	{
+         		 map.put("Error", "UID is Not Available in DB");
+         		 return map;
+         	}
         		
 	        	try
 	        	{
             		if(rewardStatus.getVersionNumber().equals(ComponentConstantString.VERSION_NUM))
             		{
-	        			//Optional <T000899Table> obj = getRewardProgramData(EacToUid,ComponentConstantString.BU_NUM,ComponentConstantString.systemCode);
-            			T000899Table T000899obj = getRewardProgramData(EacToUid,ComponentConstantString.BU_NUM,ComponentConstantString.systemCode); 
+            			
+            			ruleUtil.executeRuleForValidateRequestCode(rewardStatus,ruleConfig.getkContainer(),rewardStatusService);
+            			if(rewardStatus.isValidRequest())
+            			{
+            				T000820Obj.setrWAE_TYP_CDE(ComponentConstantString.TYP_CDE);
+            				T000820Obj.setrWAE_ACTN_DEST_NBR(ComponentConstantString.ACTN_DEST_NBR);
+            				
+            			}
+            			else
+            			{
+            				map.put("Error", "RequestCode OR DataSourceID Invalid..");
+            				return map;
+            			}
+            			T000899Table T000899obj = getRewardProgramData(t000899Repo,t000871Repo,t003922Repo,rewardStatusService); 
             			if(T000899obj != null)
             			{
-            					T000820Obj = getRewardAction(EacToUid,T000899obj.getrWDP_BU_NBR(),T000899obj.getrWACC_PGM_NBR());
+            					T000820Obj = getRewardAction(EacToUid,T000899obj.getrWDP_BU_NBR(),T000899obj.getrWACC_PGM_NBR(),ComponentConstantString.TYP_CDE,ComponentConstantString.ACTN_DEST_NBR);
 			        			if(T000820Obj != null)
 			        			{
 			        				validateRewardAction(rewardStatus,T000820Obj,rewardStatusService);
@@ -127,7 +154,7 @@ public class RewardStatusService
         }
         else 
         {
-        	map.put("Error", "Invalid Properties, should be AlphaNumeric.." );
+        	map.put("Error", "Invalid Properties, Check Input Parameters" );
            
         }
 
@@ -166,17 +193,17 @@ public class RewardStatusService
     	
     	  
     		
-    		 ruleUtil.executeRuleCheckExpDate(rewardStatus, data,kContainer,rewardStatusService);
+    		 ruleUtil.executeRuleCheckExpDate(rewardStatus, data,ruleConfig.getkContainer(),rewardStatusService);
     		          	                   	
          
     }
     
     
-    public T000820Table getRewardAction(String uid,String bu_num,String prog_num)
+    public T000820Table getRewardAction(String uid,String bu_num,String prog_num,String typeCode,String destNum)
     {
     	
     	
-    	return t000820Repo.findByUIDAndBU_NBR(uid,bu_num,prog_num);
+    	return t000820Repo.findByData(uid,bu_num,prog_num,typeCode,destNum);
     	
     	 
     }
@@ -257,11 +284,33 @@ public class RewardStatusService
 
     }
     
-    public T000899Table getRewardProgramData(String EacToUid,String BU_NUM,String systemCode) 
+    public T000899Table getRewardProgramData(T000899Repo repo899,T000871Repo repo871,T003922Repo repo3922,RewardStatusService rewardStatusService) 
     {
     	try
     	{
-	    	T000899Table T000899Obj =  t000899Repo.findByUIDAndBU_NBR(EacToUid,BU_NUM,systemCode);
+    		T000899Table obj899 = new T000899Table();
+    		T000871Table obj871 = new T000871Table();
+    		T003922Table obj922 = new T003922Table();
+
+    		
+    		ruleUtil.executeRuleForRewardProgram(repo899,repo871,repo3922,obj899,obj871,obj922,ruleConfig.getkContainer(),rewardStatusService);
+    		 
+    		if(obj899 != null && obj871 != null && obj922 != null)
+	    	{
+	    		if(obj899.getrWACC_RWDP_BU_NBR().equals(obj871.getrWDP_BU_NBR()) &&
+	    				obj899.getrWACC_PGM_NBR().equals(obj871.getrWDP_PGM_NBR()) &&
+	    				obj922.getaCCT_BU_NBR().equals(obj899.getrWDP_BU_NBR()) && 
+	    				obj922.getaCCT_SYS_CDE().equals(obj899.getrWACC_SYS_CDE()))
+	    		{
+	    		return obj899;
+	    		}
+	    		else
+	    		{
+	    			return null;
+	    		}
+	    	}
+    		
+	    	/*T000899Table T000899Obj =  t000899Repo.findByUIDAndBU_NBR(EacToUid,BU_NUM,systemCode);
 	    	T000871Table T000871Obj = 	t000871Repo.findByUIDAndBU_NBR(EacToUid,BU_NUM);
 	    	T003922Table T003922Obj =  t003922Repo.findByUIDAndBU_NBR(EacToUid,BU_NUM);
 	    	
@@ -278,7 +327,7 @@ public class RewardStatusService
 	    		{
 	    			return null;
 	    		}
-	    	}
+	    	}*/
 	    	
     	}
     	catch(Exception e)
@@ -287,46 +336,26 @@ public class RewardStatusService
     	}
     	return null;
     	
-        /*dataT000899Table = t000899Repo.findById(BU_NUM);
-        String buNum = dataT000899Table.get().getrWACC_RWDP_BU_NBR();
-        String t000899PgmNumber = dataT000899Table.get().getrWACC_PGM_NBR();
-        String t000899BuNumber = dataT000899Table.get().getrWACC_RWDP_BU_NBR();
-        String hardCodeBuNumber = dataT000899Table.get().getrWDP_BU_NBR();
-        String t000899SysCode = dataT000899Table.get().getrWACC_SYS_CDE();
-        String t00899AccNumber = dataT000899Table.get().getrWACC_ACCT_NBR();
-        String t00899Uid	= dataT000899Table.get().getrWACC_UID();
-        
-        dataT000871Table = t000871Repo.findById(buNum);
-        String wdpBuNumber = dataT000871Table.get().getrWDP_BU_NBR();
-        String t00071pgmNumber = dataT000871Table.get().getrWDP_PGM_NBR();
-        String t00071Uid	= dataT000871Table.get().getrWDP_UID();
-        dataT003922Table = t003922Repo.findAll();
-        String t00392AccBuNumber = null;
-        String t00392sysCode = null;
-        String t00392AccNumber = null;
-        String t00392Uid = null;
-        for (T003922Table data : dataT003922Table) {
-        	t00392Uid = data.getaCCT_UID();
-            t00392AccBuNumber = data.getaCCT_BU_NBR();
-            t00392sysCode = data.getaCCT_SYS_CDE();
-            t00392AccNumber = data.getaCCT_NBR();
-        }
-        if (buNum.equals(wdpBuNumber)
-                && t00071pgmNumber.equals(t000899PgmNumber)
-                && hardCodeBuNumber.equals("0012303")
-                && t00392AccBuNumber.equals(t000899BuNumber)
-                && t00392Uid.equals(t00899Uid)
-                && t00392sysCode.equals(t000899SysCode)
-                && t00392AccNumber.equals(t00899AccNumber)) {
-
-            return dataT000899Table;
-        }
-
-        return dataT000899Table;*/
-    	
-
+      
     } 
     	
+    public Map<String, String> RewardStatusGenericRulesCheck(RewardStatusGeneric obj) 
+    {
+    	Map<String, String>map=new LinkedHashMap<String, String>();
+    	ruleUtil.executeGenericRule(obj,ruleConfig.getkContainer());
+    	if(obj.isValidRequest())
+    	{
+    		map.put("Result", "SUCCESS");
+    		map.put("RewardStatus", obj.geteAC_Status());
+    	}
+    	else
+    		map.put("Result", "FAIL");
+    	
+    	return map;
+   	 
+   	  
+    }
+
     	
 
 }

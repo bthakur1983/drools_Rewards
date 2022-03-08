@@ -19,9 +19,10 @@ public class ComponentConstantString
 	public static final String EARN_TYPE = "REM";
 	public static final String ISACTIVERECORD = "ACTIVE";
 	public static final String ISINACTIVERECORD = "INACTIVE";
-	
-	
-	 
+	public static final String REQUEST_CODE = "S";
+	public static final String DATASOURCE_ID = "FIDELITY";
+	public static final String REQUESTACTION ="ACCERN-INQ";
+
 	
 }
 	

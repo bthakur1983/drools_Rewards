@@ -8,11 +8,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.drools.ecj.EclipseCompilationProblem;
+//import org.drools.ecj.EclipseCompilationProblem;
 import org.kie.api.runtime.KieContainer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.bank.drool_reward.config.RulesConfigure;
 import com.bank.drool_reward.dto.RewardManage;
 import com.bank.drool_reward.model.T000070Table;
 import com.bank.drool_reward.model.T000820Table;
@@ -37,7 +38,19 @@ import com.bank.drool_reward.util.DataConversion;
 import com.bank.drool_reward.util.RuleUtility;
 
 @Service
-public class RewardManageService {
+public class RewardManageService 
+{
+//	@Autowired
+//	private  KieContainer kContainer;
+//	
+//	@Autowired
+//	public RewardManageService(KieContainer kieContainer)
+//	{
+//		this.kContainer = kieContainer;
+//	}
+	@Autowired
+	RulesConfigure ruleConfig;
+	
 	@Autowired
 	T000070Repo t000070Repo;
 	@Autowired
@@ -84,8 +97,7 @@ public class RewardManageService {
 	RuleUtility ruleUtil = new RuleUtility();
 	public String  Hrs;
 	public String  Min;
-	@Autowired
-	private KieContainer kContainer;
+	
 	
 	private boolean isSuccess = false;
 
@@ -122,7 +134,7 @@ public void getCutOfTime(RewardManage rewardManage, RewardManageService rewardMa
 	String cutOffTime = t000070Table.getcGSE_SYS_EVT_TXT();
 	Hrs = cutOffTime.substring(0, 2);
 	Min = cutOffTime.substring(2,cutOffTime.length());
-	ruleUtil.executeRuleForCutOfTime(rewardManage,t000070Table, kContainer, rewardManageService);
+	ruleUtil.executeRuleForCutOfTime(rewardManage,t000070Table, ruleConfig.getkContainer(), rewardManageService);
 	/*int value = DataConversion.compareTimeWithCurrentTime(Hrs, Min);
 	if(value>0)
 	{
@@ -258,10 +270,10 @@ public void getCutOfTime(RewardManage rewardManage, RewardManageService rewardMa
 	{
 		Map<String, String> map = new HashMap<String, String>();
 		T003922Table tb = new T003922Table();
-		ruleUtil.executeRuleForManage(rewardManage, tb, kContainer, rewardManageService);
+		ruleUtil.executeRuleForManage(rewardManage, tb, ruleConfig.getkContainer(), rewardManageService);
 		if (tb.isValidRequest()) 
 		{
-			ruleUtil.executeRuleForManage(rewardManage, tb, kContainer, rewardManageService);
+			ruleUtil.executeRuleForManage(rewardManage, tb, ruleConfig.getkContainer(), rewardManageService);
 			String EacToUid = tb.getaCCT_UID();
 
 			if (EacToUid == null && rewardManage.getKeyType().equals(ComponentConstantString.UID_TYPE))
